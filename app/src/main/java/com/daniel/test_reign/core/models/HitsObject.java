@@ -17,6 +17,8 @@ public class HitsObject implements Parcelable {
     private String created_at;
     @Expose
     private String story_url;
+    @Expose
+    private int story_id;
 
     public String getStory_title() {
         return story_title;
@@ -58,6 +60,14 @@ public class HitsObject implements Parcelable {
         this.story_url = story_url;
     }
 
+    public int getStory_id() {
+        return story_id;
+    }
+
+    public void setStory_id(int story_id) {
+        this.story_id = story_id;
+    }
+
     public HitsObject() {
     }
 
@@ -73,6 +83,7 @@ public class HitsObject implements Parcelable {
         dest.writeString(this.author);
         dest.writeString(this.created_at);
         dest.writeString(this.story_url);
+        dest.writeInt(this.story_id);
     }
 
     protected HitsObject(Parcel in) {
@@ -81,6 +92,7 @@ public class HitsObject implements Parcelable {
         this.author = in.readString();
         this.created_at = in.readString();
         this.story_url = in.readString();
+        this.story_id = in.readInt();
     }
 
     public static final Creator<HitsObject> CREATOR = new Creator<HitsObject>() {

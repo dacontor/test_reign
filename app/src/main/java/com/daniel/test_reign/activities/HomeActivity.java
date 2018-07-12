@@ -1,46 +1,54 @@
 package com.daniel.test_reign.activities;
 
+import android.content.DialogInterface;
+import android.graphics.Canvas;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
 import com.daniel.test_reign.R;
 import com.daniel.test_reign.adapters.HitsAdapter;
+import com.daniel.test_reign.adapters.viewholder.HitsViewHolder;
+import com.daniel.test_reign.core.helper.RecyclerItemTouchHelper;
 import com.daniel.test_reign.core.models.HitsObject;
 import com.daniel.test_reign.core.models.HomeObject;
 import com.daniel.test_reign.core.retrofit.ServiceUtils;
 import com.daniel.test_reign.core.retrofit.methods.ApiMethods;
-import com.daniel.test_reign.core.views.CustomProgressDialog;
 import com.daniel.test_reign.fragments.DetailFragment;
 import com.daniel.test_reign.utils.PreferenceUtils;
 import com.daniel.test_reign.utils.SystemUtils;
 import com.daniel.test_reign.utils.UserUtils;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 
-import okhttp3.internal.Util;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class HomeActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
+public class HomeActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, RecyclerItemTouchHelper.RecyclerItemTouchHelperListener {
 
     private ApiMethods mAPIService;
-    private CustomProgressDialog progress;
+    private List<HitsObject> auxListHits = new ArrayList<>();
+    private List<Integer> listPos = new ArrayList<>();
 
     private RecyclerView listHome;
-
     private SwipeRefreshLayout mSwipe;
+    private HitsAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,24 +64,27 @@ public class HomeActivity extends AppCompatActivity implements SwipeRefreshLayou
 
         mAPIService = ServiceUtils.getAPIService();
         listHome = findViewById(R.id.listHome);
+        mSwipe = findViewById(R.id.swipeHome);
+
+    }
+
+    private void initData() {
 
         listHome.setHasFixedSize(true);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         listHome.setLayoutManager(linearLayoutManager);
+        listHome.setItemAnimator(new DefaultItemAnimator());
+        listHome.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
-        mSwipe = findViewById(R.id.swipeHome);
         mSwipe.setOnRefreshListener(this);
         mSwipe.setColorSchemeResources(R.color.colorPrimary,
                 android.R.color.holo_green_dark,
                 android.R.color.holo_orange_dark,
                 android.R.color.holo_blue_dark);
 
-    }
-
-    private void initData() {
+        createItemHelper();
 
         mSwipe.post(new Runnable() {
-
             @Override
             public void run() {
 
@@ -82,6 +93,31 @@ public class HomeActivity extends AppCompatActivity implements SwipeRefreshLayou
 
             }
         });
+
+    }
+
+    private void createItemHelper() {
+
+        ItemTouchHelper.SimpleCallback itemTouchHelperCallback = new RecyclerItemTouchHelper(0, ItemTouchHelper.LEFT, this);
+        new ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(listHome);
+
+        ItemTouchHelper.SimpleCallback itemTouchHelperCallback1 = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT | ItemTouchHelper.UP) {
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+
+            }
+
+            @Override
+            public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            }
+        };
+        new ItemTouchHelper(itemTouchHelperCallback1).attachToRecyclerView(listHome);
 
     }
 
@@ -131,7 +167,9 @@ public class HomeActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     private void initAdapter(List<HitsObject> listHits) {
 
-        Collections.sort(listHits, new Comparator<HitsObject>() {
+        auxListHits = listHits;
+
+        Collections.sort(auxListHits, new Comparator<HitsObject>() {
             @Override
             public int compare(HitsObject o1, HitsObject o2) {
 
@@ -140,12 +178,33 @@ public class HomeActivity extends AppCompatActivity implements SwipeRefreshLayou
             }
         });
 
+        checkDeleteElement();
 
-        HitsAdapter adapter = new HitsAdapter(listHits, listener);
+        adapter = new HitsAdapter(auxListHits, listener);
         listHome.setAdapter(adapter);
         adapter.notifyDataSetChanged();
 
-        PreferenceUtils.setChampionships(listHits, this);
+        PreferenceUtils.deleteDataHits(this);
+        PreferenceUtils.setDataHits(auxListHits, this);
+
+    }
+
+    private void checkDeleteElement() {
+
+        if (listPos.size() > 0) {
+
+            Iterator<HitsObject> it = auxListHits.iterator();
+            while (it.hasNext()) {
+                HitsObject user = it.next();
+                for (int id : listPos) {
+                    if (user.getStory_id() == id) {
+                        it.remove();
+                        break;
+                    }
+                }
+            }
+
+        }
 
     }
 
@@ -170,6 +229,35 @@ public class HomeActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     @Override
     public void onRefresh() {
-        callService();
+        validateNetwork();
+    }
+
+    @Override
+    public void onSwiped(final RecyclerView.ViewHolder viewHolder, int direction, int position) {
+        if (viewHolder instanceof HitsViewHolder) {
+
+            AlertDialog.Builder builder;
+            builder = new AlertDialog.Builder(this);
+            builder.setTitle("Delete row")
+                    .setMessage("Are you sure you want to delete this row?")
+                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            final HitsObject deletedItem = auxListHits.get(viewHolder.getAdapterPosition());
+                            listPos.add(deletedItem.getStory_id());
+                            adapter.removeItem(viewHolder.getAdapterPosition());
+
+                        }
+                    })
+                    .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                            adapter.notifyDataSetChanged();
+                        }
+                    })
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
+
+        }
     }
 }

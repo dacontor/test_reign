@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.daniel.test_reign.R;
@@ -15,21 +16,24 @@ public class HitsViewHolder extends RecyclerView.ViewHolder {
 
     private TextView txtTitle;
     private TextView txtDescription;
-    private LinearLayout lyCard;
+    public LinearLayout lyCard;
+    private RelativeLayout rlBox;
 
-    private HitsViewHolder(View parent, TextView txtTitle, TextView txtDescription, LinearLayout lyCard) {
+    private HitsViewHolder(View parent, TextView txtTitle, TextView txtDescription, LinearLayout lyCard, RelativeLayout rlBox) {
         super(parent);
         this.txtTitle = txtTitle;
         this.txtDescription = txtDescription;
         this.lyCard = lyCard;
+        this.rlBox = rlBox;
     }
 
     public static HitsViewHolder newInstance(View parent) {
         TextView txtTitle = parent.findViewById(R.id.txtTitle);
         TextView txtDescription = parent.findViewById(R.id.txtDescription);
         LinearLayout lyCard = parent.findViewById(R.id.lyCard);
+        RelativeLayout rlBox = parent.findViewById(R.id.rlBox);
 
-        return new HitsViewHolder(parent, txtTitle, txtDescription, lyCard);
+        return new HitsViewHolder(parent, txtTitle, txtDescription, lyCard, rlBox);
     }
 
     @SuppressLint("SetTextI18n")

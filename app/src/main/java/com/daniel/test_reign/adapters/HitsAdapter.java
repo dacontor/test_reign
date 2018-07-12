@@ -1,6 +1,5 @@
 package com.daniel.test_reign.adapters;
 
-import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -57,6 +56,16 @@ public class HitsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public interface OnItemClickListener {
         void onItemClick(HitsObject item, View view);
+    }
+
+    public void removeItem(int position) {
+        mItems.remove(position);
+        notifyItemRemoved(position);
+    }
+
+    public void restoreItem(HitsObject item, int position) {
+        mItems.add(position, item);
+        notifyItemInserted(position);
     }
 
 }

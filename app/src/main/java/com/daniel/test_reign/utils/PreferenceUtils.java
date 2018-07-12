@@ -34,7 +34,7 @@ public class PreferenceUtils {
 
     }
 
-    public static void setChampionships(List<HitsObject> listHits, Context actividad) {
+    public static void setDataHits(List<HitsObject> listHits, Context actividad) {
 
         SharedPreferences prefs = actividad.getSharedPreferences(TAG_DATA, Context.MODE_PRIVATE);
         SharedPreferences.Editor prefsEditor = prefs.edit();
@@ -42,6 +42,13 @@ public class PreferenceUtils {
         String json = gson.toJson(listHits);
         prefsEditor.putString(DATA_HITS, json);
         prefsEditor.apply();
+
+    }
+
+    public static void deleteDataHits(Context mContext) {
+
+        SharedPreferences settings = mContext.getSharedPreferences(TAG_DATA, Context.MODE_PRIVATE);
+        settings.edit().remove(DATA_HITS).apply();
 
     }
 
